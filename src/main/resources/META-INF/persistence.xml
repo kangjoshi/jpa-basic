@@ -2,16 +2,33 @@
 <persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence" version="2.2">
 
     <persistence-unit name="hello">
-        <class>com.example.jpabasic.jpabook.jpashop.domain.Member</class>
-        <class>com.example.jpabasic.jpabook.jpashop.domain.Order</class>
-        <class>com.example.jpabasic.jpabook.jpashop.domain.Item</class>
-        <class>com.example.jpabasic.jpabook.jpashop.domain.OrderItem</class>
+        <class>com.example.jpabasic.jpashop.domain.Member</class>
+        <class>com.example.jpabasic.jpashop.domain.Order</class>
+        <class>com.example.jpabasic.jpashop.domain.Item</class>
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
             <property name="javax.persistence.jdbc.user" value="sa"/>
             <property name="javax.persistence.jdbc.password" value=""/>
             <property name="javax.persistence.jdbc.url" value="jdbc:h2:~/test"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.use_sql_comments" value="true"/>
+            <property name="hibernate.hbm2ddl.auto" value="create"/>
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="team">
+        <class>com.example.jpabasic.jpateam.domain.Member</class>
+        <class>com.example.jpabasic.jpateam.domain.Team</class>
+
+        <properties>
+            <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
+            <property name="javax.persistence.jdbc.user" value="sa"/>
+            <property name="javax.persistence.jdbc.password" value=""/>
+            <property name="javax.persistence.jdbc.url" value="jdbc:h2:~/team"/>
             <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
 
             <property name="hibernate.show_sql" value="true"/>

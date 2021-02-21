@@ -169,6 +169,74 @@
         - AUTO : 방언에 따라 위 3가지 타입중 하나가 자동 선택된다. (기본 값)
 
 1. 연관관계 매핑
+    - 객체와 테이블을 매핑
+    - 방향
+        1. 단방향 연관관계
+            ```java
+            @Entity
+            public class Member {
+               
+                @Id @GeneratedValue
+                @Column(name = "MEMBER_ID")
+                private Long id;
+               
+                @Column(name = "USER_NAME")
+                private String username;
+               
+                @ManyToOne                      // member와 team의 관계는 1:N이므로 @ManyToOne으로 매핑
+                @JoinColumn(name = "TEAM_ID")   // 외래키 설정
+                private Team team;  
+            }
+            
+            @Entity
+            public class Team {
+           
+                @Id @GeneratedValue
+                private Long id;
+           
+                private String name;
+            }
+            ```
+        1. 양방향 연관관계
+            - 단방향 관계에서는 Member는 Team을 알 수 있지만 Team은 소속된 Members를 알 수 없으므로 양방향 관계를 맺어 Team도 members를 알 수 있도록 한다.
+            ```java
+                @Entity
+                public class Member {
+                          
+                    @Id @GeneratedValue
+                    @Column(name = "MEMBER_ID")
+                    private Long id;
+                          
+                    @Column(name = "USER_NAME")
+                    private String username;
+                          
+                    @ManyToOne                      // member와 team의 관계는 1:N이므로 @ManyToOne로 매핑
+                    @JoinColumn(name = "TEAM_ID")   // 외래키 설정
+                    private Team team;  
+                }
+                       
+                @Entity
+                public class Team {
+                      
+                    @Id @GeneratedValue
+                    private Long id;
+                      
+                    private String name;
+           
+                    @OneToMany(mappedBy = "team")  // team과 member의 관계는 N:1이므로 @OneToMany로 매핑
+                                                   // mappedBy 반대편(Member)에서 객체가 매핑되어 있는 필드명
+                    private List<Member> members;   
+                } 
+            ```
+            - 연관관계 주인과 mappedBy
+                - 객체는 단방향 + 단방향이 합쳐서 양방향으로 작동하고 테이블은 하나의 외래키로 양방향으로 작동(조인)이 가능하다.
+                - 외래키를 양쪽에서 관리할 수 없으므로 객체의 두 관계 중 하나를 연관 관계의 주인으로 지정하고 주인만이 외래키를 관리(등록, 수정) 
+                  주인이 아닌쪽은 읽기만 가능하다. (즉 `team.getMembers().add(member3)` 해도 아무 소용 없다.)
+                - 주인은 mappedBy 속성을 사용하면 안된다. 주인이 아닌 객체만 mappedBy 속성으로 주인 지정
+            - 단방향 매핑만으로도 이미 연관관계 매핑은 완료되었지만, 매핑 반대 방향으로 죄회 기능을 추가하기 위해서 양방향 매핑을한다. 하지만 양방향 매핑에서 발생하는 이슈가 몆몆 있으므로 단방향 매핑 위주로 하되 필요할 때 (비즈니스 코드에서 자주 반대 방향의 데이터를 사용해야 될 때) 양방향 매핑을 추가    
+    - 다중성 : 다대일, 일대다, 일대일, 다대다
+    
+    - 연관관계의 주인 : 양방향 객체 관계에서의 관리
     
 
 

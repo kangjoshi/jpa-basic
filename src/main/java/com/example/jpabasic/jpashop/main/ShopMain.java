@@ -1,4 +1,7 @@
-package com.example.jpabasic.jpabook.jpashop.main;
+package com.example.jpabasic.jpashop.main;
+
+import com.example.jpabasic.jpashop.domain.Order;
+import com.example.jpabasic.jpashop.domain.OrderItem;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -15,9 +18,13 @@ public class ShopMain {
         tx.begin();
 
         try {
+            Order order = new Order();
+            em.persist(order);
 
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
 
-
+            em.persist(orderItem);
 
             tx.commit();
         } catch (Exception e) {
