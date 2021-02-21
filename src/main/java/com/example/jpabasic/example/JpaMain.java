@@ -1,4 +1,4 @@
-package com.example.jpabasic;
+package com.example.jpabasic.example;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -17,16 +17,16 @@ public class JpaMain {
         tx.begin();
 
         Member member = new Member();
-        member.setId(1l);
-        member.setName("HelloA");
+        //member.setId(1l);
+        member.setUsername("HelloA");
+
+        System.out.println(member.getId());
 
         em.persist(member);
 
-
-
+        tx.commit();
 
         em.close();
-
         emf.close();
     }
 
