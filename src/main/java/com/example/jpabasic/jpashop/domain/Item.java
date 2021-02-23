@@ -20,4 +20,7 @@ public class Item {
     private int price;
     private int stockQuantity;
 
+    @ManyToMany(mappedBy = "items")
+    private List<Category> categories = new ArrayList<>();
+
 }

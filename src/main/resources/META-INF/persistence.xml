@@ -5,6 +5,8 @@
         <class>com.example.jpabasic.jpashop.domain.Member</class>
         <class>com.example.jpabasic.jpashop.domain.Order</class>
         <class>com.example.jpabasic.jpashop.domain.Item</class>
+        <class>com.example.jpabasic.jpashop.domain.Delivery</class>
+        <class>com.example.jpabasic.jpashop.domain.Category</class>
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
@@ -23,6 +25,7 @@
     <persistence-unit name="team">
         <class>com.example.jpabasic.jpateam.domain.Member</class>
         <class>com.example.jpabasic.jpateam.domain.Team</class>
+        <class>com.example.jpabasic.jpateam.domain.Locker</class>
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>

@@ -1,0 +1,23 @@
+package com.example.jpabasic.jpashop.domain;
+
+import javax.persistence.*;
+
+@Entity
+public class Delivery {
+
+    @Id @GeneratedValue
+    private Long id;
+
+    private String city;
+
+    private String street;
+
+    private String zipcode;
+
+    @Enumerated(EnumType.STRING)
+    private DeliveryStatus deliveryStatus;
+
+    @OneToOne(mappedBy = "delivery")
+    private Order order;
+
+}
