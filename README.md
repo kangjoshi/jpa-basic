@@ -316,7 +316,96 @@
         private String username;   
     }
     ```
+
+##### 프록시
+- `em.getReference()` : 데이터베이스 조회를 미루는 가짜 객체(프록시) 조회
  
+####### 프록시 특징
+- 프록시 객체는 실제 객체의 참조를 보관, 프록시 객체를 호출하면 값이 없다면 영속성 컨택스트에 초기화를 요청 후 실제 객체의 메서드 호출
+- 프록시 객체는 한 번만 초기화 (초기화된 실제 객체는 멤버 변수로 접근, 즉 프록시가 초기화 된다고 실제 객체가 되는것은 아님.)
+- 실제 클래스를 상속 받아 만들어 짐. 따라서 타입 체크시 ==는 실패, 대신 instance of 사용
+- 찾는 엔티티가 이미 영속 상태이면 `em.getReference()`를 호출해도 실제 객체가 반환된다.
+- 준영속 상태에서 프록시를 초기화하면 `org.hibernate.LazyInitializationException` 발생 (영속성 컨택스트에게 초기화를 요청 해야하는데 준 영속 상태이므로 초기화 할 수 없다.)
+
+####### 프록시 확인
+- `PersistenceUnitUtil.isLoaded(Object entity)` : 프록시 인스턴스의 초기화 여부 확인
+- `Hibernate.initialize(entity)` : 프록시 강제 초기화 (JPA 표준은 강제 초기화 없으므로 실제 객체 강제 호출)
+
+##### 즉시 로딩과 지연 로딩
+###### 즉시로딩
+- `@ManyToOne(fetch = FetchType.EAGER)` : 즉시 로딩을 사용하여 해당 필드를 실제 객체로 조회
+- JPA 구현체는 가능하면 조인을 사용하여 SQL 한번으로 함께 조회
+- 즉시 로딩을 적용하면 예상하지 못한 SQL이 발생할 수 있다.
+- 즉시 로딩은 JPQL에서 N+1 문제를 야기한다. (select만 해서 조회시)
+
+###### 지연로딩
+- `@ManyToOne(fetch = FetchType.LAZY)` : 지연 로딩을 사용하여 프록시로 해당 필드를 프록시로 조회
+- 가급적 지연 로딩만 사용하는 전략을 가져가는게 좋다. 그리고 개발이 어느정도 된 후 필요한 부분만 최적화 
+
+##### 영속성 전이 : CASCADE
+- 특정 엔티티를 영속 상태로 만들 때 연관된 엔티티도 함께 영속 상태로 만들고 싶을 때 (부모 엔티티를 저장할 때 자식 엔티티도 같이 저장)
+- 영속성 전이는 연관관계 매핑과 아무 관련이 없음. 영속할 때 연관된 객체도 같이하는 편리 기능
+- ALL 또는 PERSIST(등록만 사용하고 싶을때) 주로 사용
+- 단일 엔티티에만 완전 종속적일때(게시글과 댓글)만 사용
+- CascadeType.ALL + orphanRemoval = true을 활성화하면 부모 엔티티를 통해서 자식의 생명주기를 관리할 수 있다. (등록, 삭제)
+```java
+@Entity
+public class Parent {
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)  // cascade 설정
+    private List<Child> children = new ArrayList<>();
+
+    public void addChild(Child child) {
+        children.add(child);
+        child.setParent(this);
+    }
+}
+
+@Entity
+public class Child {
+    @Id @GeneratedValue
+    private Long id;
+
+    private String name;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Parent parent;
+
+    public void setParent(Parent parent) {
+        this.parent = parent;
+    }
+}
+```
+
+###### 고아 객체
+- 부모 엔티티와 연관관계가 끊어진 자식 엔티티를 자동으로 삭제
+- 단일 엔티티에만 완전 종속적일때(게시글과 댓글)만 사용
+- 부모가 제거되면 고아 객체들도 같이 제거된다. (CASCADE.REMOVE와 같이 동작)
+```java
+
+@Entity
+public class Parent {
+    @Id @GeneratedValue
+    private Long id;
+
+    private String name;
+
+    @OneToMany(mappedBy = "parent", orphanRemoval = true)   // 고아객체 자동 제거
+    private List<Child> children = new ArrayList<>();
+
+    public void addChild(Child child) {
+        children.add(child);
+        child.setParent(this);
+    }
+}
+```
+
+
+
               
 #### Reference
 자바 ORM 표준 JPA 프로그래밍 - 기본.김영한.인프런강의
