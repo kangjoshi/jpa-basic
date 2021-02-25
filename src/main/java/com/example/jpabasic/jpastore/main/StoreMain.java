@@ -1,17 +1,14 @@
-package com.example.jpabasic.jpashop.main;
-
-import com.example.jpabasic.jpashop.domain.Order;
-import com.example.jpabasic.jpashop.domain.OrderItem;
+package com.example.jpabasic.jpastore.main;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 
-public class ShopMain {
+public class StoreMain {
 
     public static void main(String[] args) {
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("hello");
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("store");
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
 

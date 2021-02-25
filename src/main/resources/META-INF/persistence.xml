@@ -7,6 +7,9 @@
         <class>com.example.jpabasic.jpashop.domain.Item</class>
         <class>com.example.jpabasic.jpashop.domain.Delivery</class>
         <class>com.example.jpabasic.jpashop.domain.Category</class>
+        <class>com.example.jpabasic.jpashop.domain.Album</class>
+        <class>com.example.jpabasic.jpashop.domain.Book</class>
+        <class>com.example.jpabasic.jpashop.domain.Movie</class>
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
@@ -26,6 +29,25 @@
         <class>com.example.jpabasic.jpateam.domain.Member</class>
         <class>com.example.jpabasic.jpateam.domain.Team</class>
         <class>com.example.jpabasic.jpateam.domain.Locker</class>
+
+        <properties>
+            <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
+            <property name="javax.persistence.jdbc.user" value="sa"/>
+            <property name="javax.persistence.jdbc.password" value=""/>
+            <property name="javax.persistence.jdbc.url" value="jdbc:h2:~/team"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.use_sql_comments" value="true"/>
+            <property name="hibernate.hbm2ddl.auto" value="create"/>
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="store">
+        <class>com.example.jpabasic.jpastore.domain.Item</class>
+        <class>com.example.jpabasic.jpastore.domain.Book</class>
+        <class>com.example.jpabasic.jpastore.domain.Album</class>
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>

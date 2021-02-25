@@ -249,6 +249,74 @@
         4. 다대다
             - 실무에서 권장하지 않는 모델 : 단순하게 연결 정보만 가지고 있는 테이블은 거의 없다. (등록시간, 등록ID 같은 정보들이 대부분 들어감.)
             - 매핑 테이블(엔티티)를 중간에 추가해서 일대다 - 다대일 관계를 가지는 것을 권장
+
+1. 상속 관계 매핑
+    - 객체는 상속 관계가 있지만 데이터베이스는 상속 관계가 없다. 그러므로 객체의 상속 구조와 DB의 슈퍼타입 서브타입 관계를 매핑한다.
+    ```java
+    @Entity
+    @Inheritance
+    public class Item {
+        @Id @GeneratedValue
+        @Column(name = "ITEM_ID")
+        private Long id;
+        private String name;
+        private int price;
+    }
+    
+    @Entity
+    @DiscriminatorValue("a")
+    public class Album extends Item {
+        private String artist;
+    }
+   
+    @Entity
+    @DiscriminatorValue("b")
+    public class Book extends Item {
+        private String author;
+        private String isbn;
+    }
+    ```
+    - @Inheritance
+        - InheritanceType.SINGLE_TABLE (기본 전략) : 하나의 테이블(Item)에 모든 값(Item + Album + Book)이 들어감
+            - 조인 쿼리가 없으므로 쿼리가 단순해진다.
+            - 자손테이블의 정보를 모두 가지고 있으므로 테이블이 커질수 있고 nullable이 많아진다.
+        - InheritanceType.JOINED : 슈퍼타입 서브타입 관계의 테이블로 생성된다.
+            - 기본적으로 많이 사용하는 전략
+            - 테이블에 데이터가 정규화되어 있기 때문에 효율적
+            - 조인을 많이 사용하므로 쿼리가 복잡해진다.
+            - Insert가 두번 (부모테이블, 자손테이블) 된다.
+        - InheritanceType.TABLE_PER_CLASS :  슈퍼타입 서브타입 관계없이 (즉 Item은 만들지 않고) 각각의 테이블이 부모테이블의 컬럼까지 가진채로 생성된다.
+            - 추천하지 않는 전략, 객체 지향적이지 않고 테이블도 관계가 없으므로 애매 함.
+            - 다형성을 이용해서 부모 객체로 조회시 모든 자손테이블을 UNION해서 가져오는 단점이 있다. (DType을 가지고 있지 않으므로 어느 테이블이 이 값인지 알 수 없으므로)
+    - @DiscriminatorColumn
+        - 단일테이블 전략은 생략해도 추가된다.
+        - 부모테이블에 자손테이블의 이름을 남길수 있도록 컬럼을 생성한다. (해당 row가 어느 자손테이블의 데이터인지)
+        - @DiscriminatorValue("name") 자손 객체에 추가하면 자손테이블의 이름을 name으로 저장한다.
+
+1. 공통 정보 매핑
+    - @MappedSuperclass
+        - 부모 클래스에 추가하면 자식 클래스에 매핑 정보만 제공한다. 엔티티가 아니므로 테이블과 매핑하지 않는다.
+        - 직접 생성하서 사용할 일이 없으므로(그리고 사용 해서는 안되므로) 추상 클래스로 만드는것을 권장
+    ```java
+    @MappedSuperclass
+    public class BaseEntity {
+        private String createdBy;
+        private LocalDateTime createdDate;
+        private String lastModifiedBy;
+        private LocalDateTime lastModifiedDate;
+    }
+   
+    @Entity
+    public class Member extends BaseEntity {
+        @Id @GeneratedValue
+        @Column(name = "MEMBER_ID")
+        private Long id;
+   
+        @Column(name = "USER_NAME")
+        private String username;   
+    }
+    ```
+ 
               
 #### Reference
 자바 ORM 표준 JPA 프로그래밍 - 기본.김영한.인프런강의
