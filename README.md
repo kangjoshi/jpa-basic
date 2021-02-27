@@ -404,8 +404,72 @@ public class Parent {
 }
 ```
 
+#### 값 타입
+- 엔티티 타입 : 식별자가 있다. 생명 주기가 관리된다. 공유할 수 있다.
+- 값 타입 : 식별자가 없다. 생명 주기를 엔티티에 의존한다. 공유할 수 있지만 하지 않는것이 안전하다.(불변 객체로 만들자.)
 
+##### 기본 값 타입
+- 자바 기본 타입 (primitive type), Wrapper 클래스, String
+- 생명주기를 엔티티에 의존
+- 기본 값 타입은 공유되지 않는다. (기본 타입은 항상 **값**을 복사함. Wrapper 클래스나 String 같은 특수한 클래스는 공유 가능한 객체지만 불변 클래스이다.)
 
-              
+##### 임베디드 타입
+- 엔티티가 아닌 그냥 값 타입, 주로 기본 값 타입을 모아서 만드는 복합 값으 형태이다
+- 재사용이 가능하고, Address.isSeoul()와 같이 해당 값 타입에서만 사용하는 메서드를 정의하는등 객체지향적으로 이점을 가질수 있다.
+- 객체와 테이블을 아주 세밀하게 매핑하는 것이 가능하다 
+- 하나의 엔티티에서 같은 임베디트 타입을 사용하려면 `@AttributeOverrides`,`@AttributeOverride` 사용하여 컬럼명 재 정의 가능
+- 임베디드 타입은 주소에 의한 참조가 되므로 여러 객체에서 공유하면 사이드 이펙트가 발생할 수 있다. 그러므로 불변 객체로 설계하여 생성 시점 이후에 절대 값을 변경할 수 없도록 만든다. (Setter를 제공하지 않는다.)
+```java
+@Embeddable // 임베디드 타입이라고 정의
+public class Address {
+    private String city;
+    private String street;
+    private String zipcode;
+    
+    public boolean isSeoul() {
+        return "SEOUL".equals(city);
+    }
+}
+
+@Entity
+public class Member extends BaseEntity {
+    @Id @GeneratedValue
+    @Column(name = "MEMBER_ID")
+    private Long id;
+    private String name;
+    @Embedded   // 임베디드 타입 사용
+    private Address address;
+}
+```
+
+##### 컬렉션 값 타입
+- 값 타입(엔티티 타입이 아님)을 컬렉션에 담아서 사용하는 타입
+- 데이터베이스는 컬렉션을 같은 테이블에 저장할 수 없으므로 컬렉션을 저장하기 위한 별도의 테이블이 필요하므로 테이블이 만들어진다
+- 조회시 지연 로딩 전략이 기본적으로 사용된다
+- 영속성 전이 + 고아 객체 제거 기능을 필수로 가진다. (부모 엔티티에 의해 생명주기가 관리된다.)
+- 값 타입은 엔티티 타입과 다르게 식별자 개념이 없으므로 변경 추적이 어렵다. 그러므로 값 타입 컬렉션에 변경 사항이 발생하면 주인 엔티티와 연관된 모든 데이터를 삭제하고, 값 타입 컬렉션에 있는 현재 값을 모두 다시 저장한다
+```java
+@Entity
+public class Member extends BaseEntity {
+
+    @Id @GeneratedValue
+    @Column(name = "MEMBER_ID")
+    private Long id;
+
+    private String name;
+    
+    @ElementCollection  // 컬렉션 타입 사용
+    @CollectionTable(name = "FAVORITE_FOODS", joinColumns = @JoinColumn(name = "MEMBER_ID")) // 컬렉션 타입 테이블 정보 지정
+    private Set<String> favoriteFoods = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "ADDRESS", joinColumns = @JoinColumn(name = "MEMBER_ID"))   
+    private List<Address> addressHistory = new ArrayList<>();
+}
+```
+- 실무에서는 정말 아주 단순한 경우만 사용하고 대부분의 상황에서는 컬렉션 값 타입 대신 일대다 관계를 사용 하는것을 권장 (컬렉션 값 타입에서 발생하는 모호함을 해소하고 영속성 전이 + 고아 객체 제거를 사용하면 값 타입 컬렉션 처럼 사용 가능)
+- 식별자가 필요하고 주기적으로 관리가 필요하다면 값 타입이 아닌 엔티티로 만들어야 한다.
+
+ 
 #### Reference
 자바 ORM 표준 JPA 프로그래밍 - 기본.김영한.인프런강의
