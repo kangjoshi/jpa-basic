@@ -470,6 +470,160 @@ public class Member extends BaseEntity {
 - 실무에서는 정말 아주 단순한 경우만 사용하고 대부분의 상황에서는 컬렉션 값 타입 대신 일대다 관계를 사용 하는것을 권장 (컬렉션 값 타입에서 발생하는 모호함을 해소하고 영속성 전이 + 고아 객체 제거를 사용하면 값 타입 컬렉션 처럼 사용 가능)
 - 식별자가 필요하고 주기적으로 관리가 필요하다면 값 타입이 아닌 엔티티로 만들어야 한다.
 
- 
+#### 객체지향쿼리 (JPQL)
+- SQL을 추상화한 객체지향쿼리
+- JPA를 사용하면 엔티티 객체를 중심으로 개발한다
+- 검색 쿼리도 테이블이 아닌 엔티티 객체를 대상으로 검색해야 하지만 모든 DB 데이터를 객체로 변환해서 검색하는 것은 불가능하므로 결국 검색 조건이 포함된 SQL이 필요
+```java
+List<Member> members = 
+            em.createQuery(
+                    "select m from Member m where m.name like '%kim%'", // JPQL
+                    Member.class
+            ).getResultList();
+            
+```
+
+####### JPQL 문법
+```text
+select_문 :: =
+    select
+    from
+    [where]
+    [groupby]
+    [having]
+    [orderby]
+
+update_문 :: = 
+    update
+    [where]
+
+delete_문 :: =
+    delete
+    [where]
+```
+- 엔티티와 속성은 대소문자 구분한다. (Member, age)
+- JPQL 키워드는 대소문자 구분하지 않는다. (select, from, where)
+- 별칭을 꼭 넣어야 한다. `Member [as] m`
+
+######## 기본 문법
+1. TypeQuery
+- 반환 타입이 명확할 때 사용
+```java
+TypedQuery<Member> query = em.createQuery("select m from Member m", Member.class);
+```
+2. Query
+- 반환 타입이 명확하지 않을 때 사용
+```java
+Query query2 = em.createQuery("select m.username, m.age from Member m");
+```
+
+3. `getSingleResult()`, `getResultList()`
+- 결과 반환 (단건, 복수건)
+
+4. 파라미터 바인딩 - 이름 기준, 위치 기준
+- 이름 기준
+```java
+List<Member> results = em.createQuery("select m from Member m where m.username=:username", Member.class)
+                    .setParameter("username", "kang")
+                    .getResultList();
+```
+- 위치 기준 (위치는 언제든 바뀔수 있으므로 사용하지 않는걸 권장)
+```java
+TypedQuery<Member> query = em.createQuery("select m from Member m where m.username=?1", Member.class);
+query.setParameter(1, "kang");
+```
+
+######## 프로젝션
+- SELECT 절에 조회할 대상을 지정
+- 프로젝션 대상 : 엔티티 타입, 임베디드 타입, 스칼라 타입
+1. 엔티티 타입 프로젝션
+```text
+SELECT m FROM Member m
+SELECT m.team FROM Member m
+```
+
+2. 임베디드 타입 프로젝션
+```text
+SELECT o.address FROM Order o
+```
+
+3. 스칼라 타입 프로젝션
+```text
+SELECT m.username, m.age FROM Member m
+```
+- new 명령어를 이용하여 객체로 프로젝션 (생성자를 이용하여 객체가 생성된다.)
+```java
+em.createQuery("select new com.example.jpabasic.jpajpql.domain.MemberDto(m.username, m.age) from Member m", MemberDto.class)
+```
+
+######## 페이징 API
+- JPA는 페이징을 아래 두 API로 추상화 되어 있다
+- `setFirstResult(int startPosition)` : 조회 시작 위치
+- `setMaxResults(int maxResult)` : 조회할 데이터 수
+```java
+List<Member> results = em.createQuery("select m from Member m order by m.age desc", Member.class)
+                    .setFirstResult(0)
+                    .setMaxResults(5)
+                    .getResultList();
+```
+
+######## 조인
+1. 내부조인
+```text
+SELECT m FROM Member m [INNER] JOIN m.team t
+```
+
+2. 외부조인
+```text
+SELECT m FROM Member m LEFT [OUTER] JOIN m.team t
+```
+
+3. 세타조인
+```text
+SELECT m FROM Member m, Team t WHERE m.username = t.name
+```
+
+4. ON절 
+- 조인 대상 필터링
+```text
+팀 이름이 A인 팀만 회원과 조인
+SELECT m FROM Member m LEFT [OUTER] JOIN m.team t ON t.name = 'A'
+```
+- 연관 관계 없는 엔티티 조인
+```text
+회원의 이름과 팀의 이름이 같은 대상 외부 조인
+SELECT m FROM Member m LEFT [OUTER] JOIN m.team t ON m.username = t.name
+```
+
+######## 서브쿼리
+- JPA는 WHERE, HAVING절에서만 서브쿼리 사용 가능, 하이버네이트에서는 SELECT도 가능, FROM에서는 사용 불가 (조인으로 해결해야 함)
+```text
+SELECT m FROM Member m WHERE exists (SELECT t FROM m.team t WHERE t.name = '탐A')
+SELECT m FROM Member m WHERE m.team = ANY(SELECT t FROM Team t)
+```
+
+###### Criteria
+- JPQL 빌더 역할 : 자바 코드로 JPQL을 작성할 수 있음
+- 공식 스펙이간 하지만.. 너무 복잡하고 코드가 장황해지는 단점때문에 실무에서는 사용하지 않는 추세
+```java
+CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
+CriteriaQuery<Member> query = criteriaBuilder.createQuery(Member.class);
+Root<Member> m = query.from(Member.class);
+CriteriaQuery criteriaQuery = query.select(m).where(criteriaBuilder.equal(m.get("name"), "kim"))
+List<Member> members = em.createQuery(criteriaQuery).getResultList();
+```
+
+###### QueryDSL
+- JPQL 빌더 역할 : 자바 코드로 JPQL을 작성할 수 있음
+- Criteria에 비해 단순하고 쉬워서 실무에서 사용 권장
+
+###### 네이티브 SQL
+- `em.createNativeQuery("SELECT * FROM MEMBER")`로 SQL을 직접 사용
+- JPQL로 해결할 수 없는 특정 데이터베이스에 의존적인 기능을 사용할 때 선택(CONNECT BY, 힌트 등)
+
+###### JDBC API 직접 사용, SpringJdbcTemplete 사용
+- 사용 가능하지만, `em.flush()`을 이용하여 영속성 컨택스트를 동기화 후 쿼리가 실행 되어야함
+
+
 #### Reference
 자바 ORM 표준 JPA 프로그래밍 - 기본.김영한.인프런강의
