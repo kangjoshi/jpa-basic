@@ -3,6 +3,10 @@ package com.example.jpabasic.jpajpql.domain;
 import javax.persistence.*;
 
 @Entity
+@NamedQuery(
+        name = "Member.findByUsername",
+        query = "SELECT m FROM Member m WHERE m.username = :username"
+)
 public class Member {
 
     @Id
@@ -37,6 +41,15 @@ public class Member {
 
     public void setAge(int age) {
         this.age = age;
+    }
+
+
+    public Team getTeam() {
+        return team;
+    }
+
+    public void setTeam(Team team) {
+        this.team = team;
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.example.jpabasic.jpajpql.main;
 
 import com.example.jpabasic.jpajpql.domain.Member;
 import com.example.jpabasic.jpajpql.domain.MemberDto;
+import com.example.jpabasic.jpajpql.domain.Team;
 
 import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -19,21 +20,28 @@ public class JpqlMain {
         tx.begin();
 
         try {
+            Team team = new Team();
+            team.setName("teamA");
+            em.persist(team);
 
-            for (int i=0; i<100; i++) {
-                Member member = new Member();
-                member.setUsername("member" + i);
-                member.setAge(i);
-                em.persist(member);
-            }
+            Member memberA = new Member();
+            memberA.setUsername("memberA");
+            memberA.setAge(10);
+            memberA.setTeam(team);
+            em.persist(memberA);
+
+            Member memberB = new Member();
+            memberB.setUsername("member");
+            memberB.setAge(10);
+            memberB.setTeam(team);
+            em.persist(memberB);
 
 
             em.flush();
             em.clear();
 
-            List<Member> results = em.createQuery("select m from Member m order by m.age desc", Member.class)
-                    .setFirstResult(0)
-                    .setMaxResults(5)
+            List<Member> results = em.createNamedQuery("Member.findByUsername", Member.class)
+                    .setParameter("username", memberA.getUsername())
                     .getResultList();
 
             System.out.println("====================");
@@ -49,6 +57,7 @@ public class JpqlMain {
 
             tx.commit();
         } catch (Exception e) {
+            e.printStackTrace();
             tx.rollback();
         } finally {
             em.close();

@@ -602,6 +602,83 @@ SELECT m FROM Member m WHERE exists (SELECT t FROM m.team t WHERE t.name = '탐A
 SELECT m FROM Member m WHERE m.team = ANY(SELECT t FROM Team t)
 ```
 
+######## 경로 표현식
+- .으로 객체 그래프를 탐색하는 것
+- 조인 없이 연관 필드 탐색을하면 묵시적 조인 발생한다. (튜닝, 에러 핸들링의 어려움이 있으므로 모든 조인은 명시적으로 사용해야 한다)
+```text
+SELECT 
+    m.username          // 상태 필드 (단순히 값을 저장하기 위한 필드, 경로 탐색의 끝이므로 더이상 탐색할 곳이 존재하지 않음)
+FROM Member m   
+    JOIN m.team t       // 단일 값 연관필드 (단일 엔티티, 경로 탐색을 더 할 수 있음)
+    JOIN m.orders o     // 컬렉션 값 연관필드 (컬렉션 엔티티, 경로 탐색을 더 할 수 없음 (자바 컬렉션과 동일 탐색하려면 코드에서 하나씩 꺼내거나, 명시적으로 JOIN을 한다면 별칭을 통해 탐색 가능))
+WHERE t.name
+```
+
+######## fetch 조인
+- 연관된 엔티티나 컬렉션을 SQL 한 번에 함게 조회하는 기능
+- JPQL에서 성능 최적화를 위해 제공
+```text
+fetch join ::= [LEFT [OUTER] | INNER] JOIN FETCH 조인경로
+
+SELECT m FROM Member m JOIN FETCH m.team
+    -> SELECT M.*, T.* FROM MEMBER M INNER JOIN TEAM T ON M.TEAM_ID = T.ID
+```
+- 페치 조인과 DISTINCT
+    - 1:N 관계에서 조인시에는 DB에서 rows는 여러건이 조회되어 나오므로(하나의 팀에서는 여러 선수가 소속 되어 있다면 조회시 팀은 같지만 선수 데이터는 다르므로 여러 rows가 반환 됨)
+    1. JPQL의 distinct를 이용하여 중복 제거
+        ```text
+        // 같은 식별자를 가진 Team 엔티티 중복 제거
+        SELECT distinct t FROM Team t JOIN FETCH t.members
+        ```
+- 일반 조인 실행시 SELECT절에 지정하지 않는다면 연관된 엔티티를 함께 조회하지 않지만 fetch 조인은 지정된 연관 관계로 함께 조회(즉시로딩)한다
+
+######### fetch 조인의 특징과 한계
+- fetch 조인 대상에게는 별칭을 줄 수 없다 (fetch 조인은 연관 관계인 모든 엔티티를 가져오는것으로 설계 되었는데 별칭을 주게되면 where등에서 사용이 가능하게되어 데이터 정합이 깨질수 있다.)
+- 둘 이상 컬렉션은 fetch 조인 할 수 없다 (데이터가 예상하지 못하게 늘어 날수 있으므로 사용 => 1\*N\*N)
+- 페이징 API를 사용할 수 없다 (별칭을 줄수 없는 이유와 비슷, 페이징이란 조회 갯수를 조정 하는것이므로)(하이버네이트는 가능하지만 모든 연관관계를 가져와서 메모리에서 페이징하므로 운영 서버에서 사용시 매우 위험)
+- fetch 조인은 객체 그래프를 유지할 때 사용하면 효과적
+
+######## 다형성 쿼리
+- `type()` 조회 대상을 특정 자식으로 한정
+```text
+SELECT i FROM Item i WHERE type(i) IN (Book, Movie)
+```
+- `treat()`
+```text
+SELECT i FROM Item i WHERE treat(i as Book).auther = 'kang'
+```
+
+######## Named 쿼리
+- 쿼리 재활용을 위해 미리 정의하여 이름을 부여하는 쿼리
+- 정적 쿼리만 가능
+- 어노테이션, XML에 정의
+- 애플리케이션 로딩 시점에 JPA가 쿼리 파싱을 시도하므로 컴파일 에러 발생한다
+```java
+// 정의
+@NamedQuery(
+        name = "Member.findByUsername",
+        query = "SELECT m FROM Member m WHERE m.username = :username"
+)
+public class Member {
+}
+```
+```java
+// 사용
+List<Member> results = em.createNamedQuery("Member.findByUsername", Member.class)
+                    .setParameter("username", memberA.getUsername())
+                    .getResultList();
+```
+
+######## 벌크연산
+- 쿼리 한번으로 여러 테이블의 row 변경
+- UPDATE, DELETE 지원
+- 벌크 연산은 영속성 컨텍스트를 무시하고 데이터베이스에 직접 질의한다. 그러므로 벌크 연산 후 영속성 컨텍스트 초기화하고 엔티티를 다시 조회 해야한다.
+
+
+
+
+
+
 ###### Criteria
 - JPQL 빌더 역할 : 자바 코드로 JPQL을 작성할 수 있음
 - 공식 스펙이간 하지만.. 너무 복잡하고 코드가 장황해지는 단점때문에 실무에서는 사용하지 않는 추세
